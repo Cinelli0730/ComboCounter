@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 final class ComboTableModel extends AbstractTableModel {
-    private static final String[] COLUMNS = {"キャラ", "タイトル", "始動", "ダメージ", "Drive", "SA", "位置", "難度", "タグ"};
+    private static final String[] COLUMNS = {"キャラ", "タイトル", "始動", "ダメージ", "Drive", "SA", "位置", "難易度", "タグ"};
 
     private final List<ComboEntry> rows = new ArrayList<>();
 

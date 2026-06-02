@@ -3,6 +3,9 @@ $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
 $checkBuildDir = Join-Path $root "build\check-classes"
 
+if (Test-Path $checkBuildDir) {
+    Remove-Item -Recurse -Force -Path $checkBuildDir
+}
 New-Item -ItemType Directory -Force -Path $checkBuildDir | Out-Null
 
 $mainSources = Get-ChildItem -Path (Join-Path $root "src\main\java") -Recurse -Filter "*.java" | ForEach-Object { $_.FullName }
