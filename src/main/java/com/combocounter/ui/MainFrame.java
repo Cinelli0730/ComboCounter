@@ -40,10 +40,12 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 public final class MainFrame extends JFrame {
     private static final String CARD_CHARACTER_SELECT = "characterSelect";
-    private static final String CARD_COMBOS = "combos";
+    private static final String CARD_COMBO_LIST = "comboList";
+    private static final String CARD_COMBO_EDITOR = "comboEditor";
     private static final String INPUT_SEPARATOR = " => ";
     private static final String[] DEFAULT_CHARACTERS = {
             "Ryu", "Luke", "Jamie", "Chun-Li", "Guile", "Kimberly", "Juri", "Ken", "Blanka", "Dhalsim",
@@ -60,7 +62,8 @@ public final class MainFrame extends JFrame {
     private final JTable table = new JTable(tableModel);
     private final CardLayout cardLayout = new CardLayout();
     private final JPanel cards = new JPanel(cardLayout);
-    private final JLabel selectedCharacterLabel = new JLabel();
+    private final JLabel listCharacterLabel = new JLabel();
+    private final JLabel editorCharacterLabel = new JLabel();
     private final JTextField searchField = new JTextField(18);
     private final JComboBox<String> characterField = new JComboBox<>(DEFAULT_CHARACTERS);
     private final JTextField titleField = new JTextField(16);
@@ -90,7 +93,8 @@ public final class MainFrame extends JFrame {
         setLocationByPlatform(true);
 
         cards.add(createCharacterSelectPanel(), CARD_CHARACTER_SELECT);
-        cards.add(createComboPanel(), CARD_COMBOS);
+        cards.add(createComboListPanel(), CARD_COMBO_LIST);
+        cards.add(createComboEditorPanel(), CARD_COMBO_EDITOR);
         add(cards, BorderLayout.CENTER);
 
         configureEvents();
@@ -121,41 +125,34 @@ public final class MainFrame extends JFrame {
         return root;
     }
 
-    private JPanel createComboPanel() {
+    private JPanel createComboListPanel() {
         JPanel root = new JPanel(new BorderLayout(10, 10));
         root.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        root.add(createComboToolbar(), BorderLayout.NORTH);
-
-        JPanel center = new JPanel(new BorderLayout(8, 8));
-        center.add(createTablePanel(), BorderLayout.CENTER);
-        center.add(createNotesPanel(), BorderLayout.SOUTH);
-        root.add(center, BorderLayout.CENTER);
-        root.add(createInputButtonPanel(), BorderLayout.EAST);
+        root.add(createListToolbar(), BorderLayout.NORTH);
+        root.add(createTablePanel(), BorderLayout.CENTER);
         return root;
     }
 
-    private JPanel createComboToolbar() {
+    private JPanel createListToolbar() {
         JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 6));
 
         JButton backButton = new JButton("キャラ選択");
         backButton.addActionListener(event -> showCharacterSelect());
         toolbar.add(backButton);
 
-        selectedCharacterLabel.setFont(selectedCharacterLabel.getFont().deriveFont(Font.BOLD, 18f));
-        toolbar.add(selectedCharacterLabel);
+        listCharacterLabel.setFont(listCharacterLabel.getFont().deriveFont(Font.BOLD, 18f));
+        toolbar.add(listCharacterLabel);
 
-        toolbar.add(new JLabel("タイトル"));
-        toolbar.add(titleField);
-        toolbar.add(new JLabel("始動"));
-        toolbar.add(starterField);
-        toolbar.add(new JLabel("状況"));
-        toolbar.add(situationField);
-        toolbar.add(new JLabel("位置"));
-        toolbar.add(positionField);
-        toolbar.add(new JLabel("ダメージ"));
-        toolbar.add(damageField);
-        toolbar.add(new JLabel("タグ"));
-        toolbar.add(tagsField);
+        JButton addButton = new JButton("追加");
+        JButton editButton = new JButton("編集");
+        JButton deleteButton = new JButton("削除");
+        addButton.addActionListener(event -> startNewCombo());
+        editButton.addActionListener(event -> startEditSelectedCombo());
+        deleteButton.addActionListener(event -> deleteSelected());
+        toolbar.add(addButton);
+        toolbar.add(editButton);
+        toolbar.add(deleteButton);
+
         toolbar.add(new JLabel("検索"));
         toolbar.add(searchField);
 
@@ -176,7 +173,41 @@ public final class MainFrame extends JFrame {
         return new JScrollPane(table);
     }
 
-    private JPanel createNotesPanel() {
+    private JPanel createComboEditorPanel() {
+        JPanel root = new JPanel(new BorderLayout(10, 10));
+        root.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        root.add(createEditorToolbar(), BorderLayout.NORTH);
+        root.add(createEditorDetailsPanel(), BorderLayout.CENTER);
+        root.add(createInputButtonPanel(), BorderLayout.EAST);
+        return root;
+    }
+
+    private JPanel createEditorToolbar() {
+        JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 6));
+
+        JButton listButton = new JButton("一覧へ戻る");
+        listButton.addActionListener(event -> showComboList());
+        toolbar.add(listButton);
+
+        editorCharacterLabel.setFont(editorCharacterLabel.getFont().deriveFont(Font.BOLD, 18f));
+        toolbar.add(editorCharacterLabel);
+
+        toolbar.add(new JLabel("タイトル"));
+        toolbar.add(titleField);
+        toolbar.add(new JLabel("始動"));
+        toolbar.add(starterField);
+        toolbar.add(new JLabel("状況"));
+        toolbar.add(situationField);
+        toolbar.add(new JLabel("位置"));
+        toolbar.add(positionField);
+        toolbar.add(new JLabel("ダメージ"));
+        toolbar.add(damageField);
+        toolbar.add(new JLabel("タグ"));
+        toolbar.add(tagsField);
+        return toolbar;
+    }
+
+    private JPanel createEditorDetailsPanel() {
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setBorder(BorderFactory.createEmptyBorder(4, 0, 0, 0));
 
@@ -188,15 +219,12 @@ public final class MainFrame extends JFrame {
         row = addArea(panel, row, "メモ", notesArea);
 
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
-        JButton newButton = new JButton("新規");
         JButton saveButton = new JButton("保存");
-        JButton deleteButton = new JButton("削除");
-        newButton.addActionListener(event -> clearForm());
+        JButton cancelButton = new JButton("キャンセル");
         saveButton.addActionListener(event -> saveForm());
-        deleteButton.addActionListener(event -> deleteSelected());
-        buttons.add(newButton);
+        cancelButton.addActionListener(event -> showComboList());
         buttons.add(saveButton);
-        buttons.add(deleteButton);
+        buttons.add(cancelButton);
 
         GridBagConstraints constraints = new GridBagConstraints();
         constraints.gridx = 0;
@@ -304,11 +332,7 @@ public final class MainFrame extends JFrame {
     private void configureEvents() {
         table.getSelectionModel().addListSelectionListener(event -> {
             if (!event.getValueIsAdjusting()) {
-                int selectedRow = table.getSelectedRow();
-                if (selectedRow >= 0) {
-                    int modelRow = table.convertRowIndexToModel(selectedRow);
-                    fillForm(tableModel.rowAt(modelRow));
-                }
+                selectedId = selectedCombo().map(ComboEntry::id).orElse(null);
             }
         });
 
@@ -334,14 +358,23 @@ public final class MainFrame extends JFrame {
         cardLayout.show(cards, CARD_CHARACTER_SELECT);
     }
 
+    private void showComboList() {
+        cardLayout.show(cards, CARD_COMBO_LIST);
+    }
+
+    private void showComboEditor() {
+        cardLayout.show(cards, CARD_COMBO_EDITOR);
+    }
+
     private void openCharacter(String character) {
         selectedCharacter = character;
-        selectedCharacterLabel.setText(character);
+        listCharacterLabel.setText(character);
+        editorCharacterLabel.setText(character);
         characterField.setSelectedItem(character);
         clearForm();
         characterField.setSelectedItem(character);
         applyFilters();
-        cardLayout.show(cards, CARD_COMBOS);
+        showComboList();
     }
 
     private void reloadCombos() {
@@ -377,6 +410,31 @@ public final class MainFrame extends JFrame {
                 combo.tags(),
                 combo.notes()
         ).toLowerCase(Locale.ROOT);
+    }
+
+    private void startNewCombo() {
+        clearForm();
+        characterField.setSelectedItem(selectedCharacter);
+        showComboEditor();
+    }
+
+    private void startEditSelectedCombo() {
+        Optional<ComboEntry> combo = selectedCombo();
+        if (combo.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "編集するコンボを一覧から選択してください。", "選択エラー", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        fillForm(combo.get());
+        showComboEditor();
+    }
+
+    private Optional<ComboEntry> selectedCombo() {
+        int selectedRow = table.getSelectedRow();
+        if (selectedRow < 0) {
+            return Optional.empty();
+        }
+        int modelRow = table.convertRowIndexToModel(selectedRow);
+        return Optional.of(tableModel.rowAt(modelRow));
     }
 
     private void fillForm(ComboEntry combo) {
@@ -445,6 +503,7 @@ public final class MainFrame extends JFrame {
             selectedId = formValues.id();
             reloadCombos();
             selectRow(selectedId);
+            showComboList();
         } catch (IOException ex) {
             showError("保存に失敗しました。", ex);
         }
@@ -458,7 +517,9 @@ public final class MainFrame extends JFrame {
     }
 
     private void deleteSelected() {
-        if (selectedId == null) {
+        Optional<ComboEntry> combo = selectedCombo();
+        if (combo.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "削除するコンボを一覧から選択してください。", "選択エラー", JOptionPane.WARNING_MESSAGE);
             return;
         }
         int result = JOptionPane.showConfirmDialog(this, "選択中のコンボを削除しますか？", "削除確認", JOptionPane.YES_NO_OPTION);
@@ -466,8 +527,8 @@ public final class MainFrame extends JFrame {
             return;
         }
         try {
-            repository.delete(selectedId);
-            clearForm();
+            repository.delete(combo.get().id());
+            selectedId = null;
             reloadCombos();
         } catch (IOException ex) {
             showError("削除に失敗しました。", ex);

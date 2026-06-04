@@ -1,0 +1,62 @@
+# Compiled files
+*.class
+*.jar
+*.war
+*.ear
+*.zip
+
+# Build directories
+build/
+target/
+dist/
+out/
+
+# Gradle
+.gradle/
+gradle-wrapper.properties
+gradlew
+gradlew.bat
+
+# Maven
+.m2/
+
+# IDE configurations
+.vscode/
+.idea/
+*.iml
+*.iws
+*.ipr
+*.classpath
+.project
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# Runtime/Temporary files
+*.log
+*.swp
+*.swo
+*~
+.env
+.env.local
+
+# Data files
+*.db
+*.sqlite
+*.sqlite3
+
+# Dependency tracking
+.classpath.lock
+
+# Other files
+data/sf6/*
