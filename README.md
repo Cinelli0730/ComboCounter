@@ -1,4 +1,4 @@
-# ComboCounter
+# ComboMaker
 
 Street Fighter 6のコンボや連携を記録・管理するためのJavaデスクトップアプリです。
 
